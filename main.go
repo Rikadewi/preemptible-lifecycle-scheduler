@@ -14,11 +14,11 @@ import (
 
 func main() {
 	cfg := config.NewDefaultConfig()
-	err := cfg.Load("/home/app/config.yaml")
+	//err := cfg.Load("/home/app/config.yaml")
 	//err := cfg.Load("config.yaml")
-	if err != nil {
-		log.Fatalf("failed to read config file: %v", err)
-	}
+	//if err != nil {
+	//	log.Fatalf("failed to read config file: %v", err)
+	//}
 	log.Printf("using configuration: %#v", cfg)
 
 	ph, err := peakhour.NewClient(cfg.PeakHourRanges)
