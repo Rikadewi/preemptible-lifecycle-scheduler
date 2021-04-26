@@ -14,7 +14,8 @@ import (
 
 func main() {
 	cfg := config.NewDefaultConfig()
-	err := cfg.Load("./config/config.yaml")
+	err := cfg.Load("/home/app/config/config.yaml")
+	// err := cfg.Load("./config/config.yaml")
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
@@ -38,6 +39,22 @@ func main() {
 
 	go func(waitGroup *sync.WaitGroup) {
 		//schedulerClient.Start()
+
+		nodes, err := clusterClient.GetPreemptibleNodes()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		for _, node := range nodes.Items {
+			log.Printf(clusterClient.GetNodeCreatedTime(node).String())
+		}
+
+		node := nodes.Items[1]
+		err = clusterClient.ProcessNode(node)
+		if err != nil {
+			log.Println(err)
+		}
 	}(waitGroup)
 
 	signalReceived := <-gracefulShutdown

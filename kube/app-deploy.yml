@@ -17,6 +17,7 @@ spec:
         app: preemptible-lifecycle-scheduler
         squad: governance
     spec:
+      serviceAccountName: preemptible-lifecycle-scheduler
       terminationGracePeriodSeconds: 30
       nodeSelector:
         warpin: persistent
