@@ -11,7 +11,7 @@ const (
 )
 
 type Config struct {
-	Environment    string   `yaml:"listen-address"`
+	Environment    string   `yaml:"environment"`
 	PeakHourRanges []string `yaml:"peak-hour-ranges"`
 }
 
