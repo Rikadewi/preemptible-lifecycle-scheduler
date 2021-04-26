@@ -10,6 +10,7 @@ import (
 	"preemptible-lifecycle-scheduler/scheduler"
 	"sync"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -40,6 +41,13 @@ func main() {
 		//schedulerClient.Start()
 
 		nodes, err := clusterClient.GetPreemptibleNodes()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		time.Sleep(1 * time.Minute)
+		nodes, err = clusterClient.GetPreemptibleNodes()
 		if err != nil {
 			log.Println(err)
 			return
