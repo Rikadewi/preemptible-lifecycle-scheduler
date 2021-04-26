@@ -3,29 +3,33 @@ kind: Deployment
 metadata:
   name: preemptible-lifecycle-scheduler
   namespace: hack-tribe
+  labels:
+    app: preemptible-lifecycle-scheduler
+    squad: governance
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: preemptible-lifecycle-scheduler
-  replicas: 1
   template:
     metadata:
       labels:
         app: preemptible-lifecycle-scheduler
+        squad: governance
     spec:
+      terminationGracePeriodSeconds: 30
       nodeSelector:
-        warpin: gitlab-ci
-      serviceAccountName: preemptible-lifecycle-scheduler
+        warpin: persistent
       containers:
         - image: asia.gcr.io/warung-support/preemptible-lifecycle-scheduler-prod:latest
           name: preemptible-lifecycle-scheduler
           imagePullPolicy: Always
           volumeMounts:
-            - name: preemptible-lifecycle-scheduler-config
-              mountPath: /home/app
-
+              - name: preemptible-lifecycle-scheduler-config
+                mountPath: /home/app
       imagePullSecrets:
         - name: gcr-json-key
+
       volumes:
         - name: preemptible-lifecycle-scheduler-config
           secret:
