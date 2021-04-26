@@ -25,8 +25,9 @@ spec:
           name: preemptible-lifecycle-scheduler
           imagePullPolicy: Always
           volumeMounts:
-              - name: preemptible-lifecycle-scheduler-config
-                mountPath: /home/app
+            - name: preemptible-lifecycle-scheduler-config
+              mountPath: /home/app/config
+              readOnly: true
       imagePullSecrets:
         - name: gcr-json-key
 

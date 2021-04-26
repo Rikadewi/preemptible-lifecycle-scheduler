@@ -45,6 +45,8 @@ RUN apk --no-cache add ca-certificates \
   && chown -R app /home/app
 
 WORKDIR /home/app
+RUN mkdir -p config
+
 COPY --from=builder /app/src/handler/preemptible-lifecycle-scheduler .
 
 USER app
