@@ -3,6 +3,7 @@ vendor
 
 # binary
 preemptible-lifecycle-scheduler
+main
 
 # IDE
 .idea

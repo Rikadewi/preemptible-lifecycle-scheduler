@@ -1,0 +1,33 @@
+image: asia.gcr.io/warung-support/golang-alpine-ci:latest
+
+variables:
+  REGISTRY_IMAGE: asia.gcr.io/warung-support/${CI_PROJECT_NAME}
+
+after_script:
+  - rm -rf $HOME/.docker
+  - rm -rf $HOME/.ssh/id_rsa
+
+stages:
+  - build
+
+Build Production:
+  image:
+    name: gcr.io/kaniko-project/executor:debug-v0.16.0
+    entrypoint: [""]
+  cache:
+    paths:
+      - .cache
+  stage: build
+  before_script:
+    - mkdir -p /root/.docker
+    - echo "$DOCKER_AUTH_CONFIG" > /kaniko/.docker/config.json
+  variables:
+    ENV_STAGE: prod
+  only:
+    - master
+  script:
+    - mkdir -p .cache
+    - export GOPATH="$CI_PROJECT_DIR/.cache"
+    - /kaniko/executor --build-arg SSH_PRIVATE_KEY="$GIT_PRIVATE_KEY" --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination ${REGISTRY_IMAGE}-${ENV_STAGE}:latest
+  tags:
+    - gke
