@@ -243,3 +243,16 @@ func TestTime_Subtract(t *testing.T) {
 		})
 	}
 }
+
+func TestNewTimeNow(t *testing.T) {
+	expectedTime := &Time{10, 29}
+	Now = func() time.Time {
+		return time.Date(1, 1, 1, expectedTime.Hour, expectedTime.Minute, 0, 0, time.Now().Location())
+	}
+
+	t1 := NewTimeNow()
+
+	if *t1 != *expectedTime {
+		t.Errorf("expected %v, got %v", *t1, *expectedTime)
+	}
+}

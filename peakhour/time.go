@@ -12,6 +12,8 @@ var (
 		Hour:   0,
 		Minute: 0,
 	}
+
+	Now = time.Now
 )
 
 type Time struct {
@@ -20,7 +22,7 @@ type Time struct {
 }
 
 func NewTimeNow() *Time {
-	return NewTime(time.Now())
+	return NewTime(Now())
 }
 
 func NewTime(t time.Time) *Time {
@@ -60,6 +62,10 @@ func (t *Time) IsLessThan(t1 *Time) bool {
 	}
 
 	return t.Hour < t1.Hour
+}
+
+func (t *Time) IsEqual(t1 *Time) bool {
+	return t.Hour == t1.Hour && t.Minute == t1.Minute
 }
 
 // t subtracted by t1, will always return 0 <= result < 24 hour

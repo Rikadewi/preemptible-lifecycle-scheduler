@@ -11,7 +11,7 @@ type Client struct {
 	IsMidnight bool
 }
 
-func NewPeakHour(periods []string) (*Client, error) {
+func NewClient(periods []string) (*Client, error) {
 	p, i, err := ParseRangeString(periods)
 	if err != nil {
 		return nil, err
@@ -67,11 +67,11 @@ func ParseRangeString(periodsStr []string) ([]Period, bool, error) {
 	isStartMidnight := false
 	isEndMidnight := false
 	for _, period := range periods {
-		if period.Start == StartMidnight {
+		if period.Start.IsEqual(StartMidnight) {
 			isStartMidnight = true
 		}
 
-		if period.End == EndMidnight {
+		if period.End.IsEqual(EndMidnight) {
 			isEndMidnight = true
 		}
 	}
@@ -127,15 +127,16 @@ func (c *Client) IsPeakHourNow() bool {
 	return false
 }
 
+// get nearest or equal
 func (c *Client) GetNearestEndPeakHour() time.Time {
 	result := &Time{}
 	minD := 24 * time.Hour
-	tNow := time.Now()
+	tNow := Now()
 	now := NewTime(tNow)
 	isNextDay := false
 	for _, period := range c.Periods {
 		if c.IsMidnight {
-			if period.End == EndMidnight {
+			if period.End.IsEqual(EndMidnight) {
 				continue
 			}
 		}
@@ -145,26 +146,27 @@ func (c *Client) GetNearestEndPeakHour() time.Time {
 		if minD > d {
 			minD = d
 			isNextDay = next
-			result = period.Start
+			result = period.End
 		}
 	}
 
 	if isNextDay {
-		tNow.Add(24 * time.Hour)
+		tNow = tNow.Add(24 * time.Hour)
 	}
 
 	return time.Date(tNow.Year(), tNow.Month(), tNow.Day(), result.Hour, result.Minute, 0, 0, tNow.Location())
 }
 
+// get nearest or equal
 func (c *Client) GetNearestStartPeakHour() time.Time {
 	result := &Time{}
 	minD := 24 * time.Hour
-	tNow := time.Now()
+	tNow := Now()
 	now := NewTime(tNow)
 	isNextDay := false
 	for _, period := range c.Periods {
 		if c.IsMidnight {
-			if period.End == StartMidnight {
+			if period.Start.IsEqual(StartMidnight) {
 				continue
 			}
 		}
@@ -179,7 +181,7 @@ func (c *Client) GetNearestStartPeakHour() time.Time {
 	}
 
 	if isNextDay {
-		tNow.Add(24 * time.Hour)
+		tNow = tNow.Add(24 * time.Hour)
 	}
 
 	return time.Date(tNow.Year(), tNow.Month(), tNow.Day(), result.Hour, result.Minute, 0, 0, tNow.Location())
