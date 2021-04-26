@@ -11,30 +11,35 @@ type Client struct {
 	IsMidnight bool
 }
 
-func NewPeakHour(periods []string) *Client {
-	p, i := ParseRangeString(periods)
+func NewPeakHour(periods []string) (*Client, error) {
+	p, i, err := ParseRangeString(periods)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Client{
 		Periods:    p,
 		IsMidnight: i,
-	}
+	}, nil
 }
 
-func ParseRangeString(periodsStr []string) ([]Period, bool) {
+func ParseRangeString(periodsStr []string) ([]Period, bool, error) {
 	periods := make([]Period, 0)
+	isMidnight := false
 	for _, periodStr := range periodsStr {
 		p := strings.Split(periodStr, "-")
 		if len(p) != 2 {
-			panic(fmt.Sprintf("invalid peak hour ranges: %s", periodStr))
+			return periods, isMidnight, fmt.Errorf("invalid peak hour ranges: %s", periodStr)
 		}
 
 		start, err := time.Parse("15:04", p[0])
 		if err != nil {
-			panic(err)
+			return periods, isMidnight, err
 		}
 
 		end, err := time.Parse("15:04", p[1])
 		if err != nil {
-			panic(err)
+			return periods, isMidnight, err
 		}
 
 		if start.After(end) {
@@ -59,7 +64,6 @@ func ParseRangeString(periodsStr []string) ([]Period, bool) {
 	}
 
 	// check is midnight
-	isMidnight := false
 	isStartMidnight := false
 	isEndMidnight := false
 	for _, period := range periods {
@@ -76,7 +80,7 @@ func ParseRangeString(periodsStr []string) ([]Period, bool) {
 		isMidnight = true
 	}
 
-	return periods, isMidnight
+	return periods, isMidnight, nil
 }
 
 func MergePeriod(periods []Period, addedPeriod Period) []Period {

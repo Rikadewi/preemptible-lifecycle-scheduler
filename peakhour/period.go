@@ -1,5 +1,6 @@
 package peakhour
 
+// Start is always less than or equal to end
 type Period struct {
 	Start *Time
 	End   *Time

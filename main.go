@@ -20,7 +20,10 @@ func main() {
 	}
 	log.Printf("using configuration: %#v", cfg)
 
-	ph := peakhour.NewPeakHour(cfg.PeakHourRanges)
+	ph, err := peakhour.NewPeakHour(cfg.PeakHourRanges)
+	if err != nil {
+		log.Fatalf("failed to parse peak hour: %v", err)
+	}
 
 	clusterClient, err := cluster.NewClient(cfg)
 	if err != nil {
