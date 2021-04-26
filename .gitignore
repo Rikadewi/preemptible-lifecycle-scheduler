@@ -1,0 +1,11 @@
+# dependency
+vendor
+
+# binary
+preemptible-lifecycle-scheduler
+
+# IDE
+.idea
+
+# Transient file
+config.yaml
