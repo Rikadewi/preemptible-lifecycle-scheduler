@@ -23,22 +23,22 @@ func main() {
 
 	ph, err := peakhour.NewClient(cfg.PeakHourRanges)
 	if err != nil {
-		log.Fatalf("failed to parse peak hour: %v", err)
+		log.Printf("failed to parse peak hour: %v", err)
 	}
 
 	clusterClient, err := cluster.NewClient(cfg)
 	if err != nil {
-		log.Fatalf("failed to init kubernetes client: %v", err)
+		log.Printf("failed to init kubernetes client: %v", err)
 	}
 
-	schedulerClient := scheduler.NewClient(clusterClient, ph)
+	_ = scheduler.NewClient(clusterClient, ph)
 
 	gracefulShutdown := make(chan os.Signal)
 	signal.Notify(gracefulShutdown, syscall.SIGTERM, syscall.SIGINT)
 	waitGroup := &sync.WaitGroup{}
 
 	go func(waitGroup *sync.WaitGroup) {
-		schedulerClient.Start()
+		//schedulerClient.Start()
 	}(waitGroup)
 
 	signalReceived := <-gracefulShutdown
