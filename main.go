@@ -14,21 +14,20 @@ import (
 
 func main() {
 	cfg := config.NewDefaultConfig()
-	err := cfg.Load("/home/app/config/config.yaml")
-	//err := cfg.Load("config.yaml")
+	err := cfg.Load("./config/config.yaml")
 	if err != nil {
-		log.Printf("failed to read config file: %v", err)
+		log.Fatalf("failed to read config file: %v", err)
 	}
 	log.Printf("using configuration: %#v", cfg)
 
 	ph, err := peakhour.NewClient(cfg.PeakHourRanges)
 	if err != nil {
-		log.Printf("failed to parse peak hour: %v", err)
+		log.Fatalf("failed to parse peak hour: %v", err)
 	}
 
 	clusterClient, err := cluster.NewClient(cfg)
 	if err != nil {
-		log.Printf("failed to init kubernetes client: %v", err)
+		log.Fatalf("failed to init kubernetes client: %v", err)
 	}
 
 	_ = scheduler.NewClient(clusterClient, ph)

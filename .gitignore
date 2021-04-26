@@ -9,4 +9,4 @@ main
 .idea
 
 # Transient file
-config.yaml
+config/config.yaml

@@ -17,8 +17,8 @@ type Config struct {
 
 func NewDefaultConfig() *Config {
 	return &Config{
-		Environment:    EnvProduction,
-		PeakHourRanges: []string{"03:00-23:00"},
+		Environment:    EnvDevelopment,
+		PeakHourRanges: []string{},
 	}
 }
 
