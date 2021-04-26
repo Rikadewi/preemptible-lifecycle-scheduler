@@ -14,7 +14,8 @@ import (
 
 func main() {
 	cfg := config.NewDefaultConfig()
-	err := cfg.Load("config.yaml")
+	err := cfg.Load("/home/app/config.yaml")
+	//err := cfg.Load("config.yaml")
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}

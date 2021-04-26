@@ -1,4 +1,4 @@
-apiVersion: kube.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -6,7 +6,7 @@ metadata:
   name: preemptible-lifecycle-scheduler
   namespace: hack-tribe
 roleRef:
-  apiGroup: kube.authorization.k8s.io
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: preemptible-lifecycle-scheduler
 subjects:

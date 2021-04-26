@@ -22,7 +22,7 @@ spec:
           imagePullPolicy: Always
           volumeMounts:
             - name: preemptible-lifecycle-scheduler-config
-              mountPath: /usr/src/app
+              mountPath: /home/app
 
       imagePullSecrets:
         - name: gcr-json-key
