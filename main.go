@@ -43,13 +43,16 @@ func main() {
 		nodes, err := clusterClient.GetPreemptibleNodes()
 		if err != nil {
 			log.Println(err)
-			return
 		}
 
 		time.Sleep(1 * time.Minute)
 		nodes, err = clusterClient.GetPreemptibleNodes()
 		if err != nil {
 			log.Println(err)
+		}
+
+		if len(nodes.Items) == 0 {
+			log.Println("not found nodes")
 			return
 		}
 
