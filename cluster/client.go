@@ -43,9 +43,27 @@ func NewClient(cfg *config.Config) (*Client, error) {
 
 func (c *Client) GetPreemptibleNodes() (*corev1.NodeList, error) {
 	log.Printf("scanning nodes")
-	return c.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{
+	nodes, err := c.KubeClient.CoreV1().Nodes().List(metav1.ListOptions{
 		LabelSelector: "cloud.google.com/gke-preemptible=true",
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// filter out exception node
+	items := make([]corev1.Node, 0)
+	for _, node := range nodes.Items {
+		if val, ok := node.Labels["cloud.google.com/gke-nodepool"]; ok {
+			if val == "prem-test-pool" {
+				continue
+			}
+		}
+
+		items = append(items, node)
+	}
+
+	nodes.Items = items
+	return nodes, err
 }
 
 func (c *Client) ProcessNode(node corev1.Node) (err error) {
