@@ -31,40 +31,15 @@ func main() {
 		log.Fatalf("failed to init kubernetes client: %v", err)
 	}
 
-	_ = scheduler.NewClient(clusterClient, ph)
+	schedulerClient := scheduler.NewClient(clusterClient, ph)
 
 	gracefulShutdown := make(chan os.Signal)
 	signal.Notify(gracefulShutdown, syscall.SIGTERM, syscall.SIGINT)
 	waitGroup := &sync.WaitGroup{}
 
 	go func(waitGroup *sync.WaitGroup) {
-		//schedulerClient.Start()
-
-		nodes, err := clusterClient.GetPreemptibleNodes()
-		if err != nil {
-			log.Println(err)
-		}
-
 		time.Sleep(1 * time.Minute)
-		nodes, err = clusterClient.GetPreemptibleNodes()
-		if err != nil {
-			log.Println(err)
-		}
-
-		if len(nodes.Items) == 0 {
-			log.Println("not found nodes")
-			return
-		}
-
-		for _, node := range nodes.Items {
-			log.Printf(clusterClient.GetNodeCreatedTime(node).String())
-		}
-
-		node := nodes.Items[1]
-		err = clusterClient.ProcessNode(node)
-		if err != nil {
-			log.Println(err)
-		}
+		schedulerClient.Start()
 	}(waitGroup)
 
 	signalReceived := <-gracefulShutdown
