@@ -28,7 +28,7 @@ func TestClient_GetPeakHourState(t *testing.T) {
 		"in peak hour equal end": {
 			PeriodStr:   []string{"10:00-15:00"},
 			CurrentTime: &peakhour.Time{Hour: 15, Minute: 00},
-			Expected:    InPeakHour,
+			Expected:    OutsidePeakHour,
 		},
 		"start peak hour": {
 			PeriodStr:   []string{"10:00-15:00"},
@@ -48,7 +48,7 @@ func TestClient_GetPeakHourState(t *testing.T) {
 		"in peak hour, end midnight case": {
 			PeriodStr:   []string{"22:00-15:00"},
 			CurrentTime: &peakhour.Time{Hour: 23, Minute: 59},
-			Expected:    InPeakHour,
+			Expected:    OutsidePeakHour,
 		},
 		"in peak hour, start midnight case": {
 			PeriodStr:   []string{"22:00-15:00"},

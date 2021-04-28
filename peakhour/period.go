@@ -7,7 +7,7 @@ type Period struct {
 }
 
 func (p *Period) IsTimeInPeriod(t *Time) bool {
-	if p.Start.IsLessThanOrEqual(t) && p.End.IsGreaterThanOrEqual(t) {
+	if p.Start.IsLessThanOrEqual(t) && p.End.IsGreaterThan(t) {
 		return true
 	}
 
