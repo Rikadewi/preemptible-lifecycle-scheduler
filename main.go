@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("failed to init kubernetes client: %v", err)
 	}
 
-	schedulerClient := scheduler.NewClient(clusterClient, ph)
+	schedulerClient := scheduler.NewClient(clusterClient, ph, cfg.GracefulPeriod)
 
 	gracefulShutdown := make(chan os.Signal)
 	signal.Notify(gracefulShutdown, syscall.SIGTERM, syscall.SIGINT)
