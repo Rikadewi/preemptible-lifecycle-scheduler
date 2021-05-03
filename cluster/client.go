@@ -15,8 +15,13 @@ import (
 	"time"
 )
 
+var (
+	CheckPodInterval = 10 * time.Second
+)
+
 type Client struct {
-	KubeClient *kubernetes.Clientset
+	KubeClient    *kubernetes.Clientset
+	DeleteTimeout time.Duration
 }
 
 func NewClient(cfg *config.Config) (*Client, error) {
@@ -37,7 +42,8 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	}
 
 	return &Client{
-		KubeClient: clientset,
+		KubeClient:    clientset,
+		DeleteTimeout: time.Duration(cfg.GracefulPeriod) * time.Minute,
 	}, nil
 }
 
@@ -89,14 +95,64 @@ func (c *Client) UnScheduleNode(node corev1.Node) error {
 }
 
 func (c *Client) DeletePods(node corev1.Node) error {
-	pods, err := c.KubeClient.CoreV1().Pods("").List(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("spec.nodeName=%s,metadata.namespace!=kube-system", node.Name),
-	})
+	pods, err := c.GetPods(node)
 	if err != nil {
 		return err
 	}
 
-	for _, pod := range pods.Items {
+	for _, pod := range pods {
+		// TODO: try to check the grace period in delete option
+		err = c.KubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Printf("failed to delete pod %s: %v", pod.Name, err)
+			continue
+		}
+	}
+
+	doneDeleting := make(chan bool)
+	go func() {
+		// check whether all pods have been terminated
+		for {
+			pods, err := c.GetPods(node)
+			if err != nil {
+				log.Printf("error get pods from node: %s, err: %v", node.Name, err)
+				time.Sleep(CheckPodInterval)
+				continue
+			}
+
+			if len(pods) == 0 {
+				doneDeleting <- true
+				return
+			}
+
+			// wait for pod to be deleted
+			time.Sleep(CheckPodInterval)
+		}
+	}()
+
+	select {
+	case <-doneDeleting:
+		log.Println("done deleting")
+		break
+	case <-time.After(c.DeleteTimeout):
+		log.Println("timeout deleting node")
+		return nil
+	}
+
+	return nil
+}
+
+// Get all application pods, filtered out pod from kube-system namespace and DaemonSet.
+func (c *Client) GetPods(node corev1.Node) (pods []corev1.Pod, err error) {
+	pods = make([]corev1.Pod, 0)
+	podList, err := c.KubeClient.CoreV1().Pods("").List(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("spec.nodeName=%s,metadata.namespace!=kube-system", node.Name),
+	})
+	if err != nil {
+		return
+	}
+
+	for _, pod := range podList.Items {
 		// filter out pod from DaemonSet
 		isDaemonSet := false
 		for _, owner := range pod.ObjectMeta.OwnerReferences {
@@ -110,15 +166,10 @@ func (c *Client) DeletePods(node corev1.Node) error {
 			continue
 		}
 
-		// TODO: try to check the grace period in delete option
-		err = c.KubeClient.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{})
-		if err != nil {
-			log.Printf("failed to delete pod %s: %v", pod.Name, err)
-			continue
-		}
+		pods = append(pods, pod)
 	}
 
-	return nil
+	return
 }
 
 func (c *Client) DeleteNode(node corev1.Node) error {

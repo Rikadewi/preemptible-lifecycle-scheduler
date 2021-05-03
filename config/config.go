@@ -12,6 +12,7 @@ const (
 
 type Config struct {
 	Environment    string   `yaml:"environment"`
+	GracefulPeriod int      `yaml:"graceful-period"`
 	PeakHourRanges []string `yaml:"peak-hour-ranges"`
 }
 

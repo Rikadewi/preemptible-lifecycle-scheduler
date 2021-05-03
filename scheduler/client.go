@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	DefaultGracefulDuration = 30 * time.Minute
-
 	InPeakHour      = "in peak hour"
 	OutsidePeakHour = "outside peak hour"
 	StartPeakHour   = "start peak hour"
@@ -22,14 +20,20 @@ type ClusterClient interface {
 }
 
 type Client struct {
-	Cluster   ClusterClient
-	PeakHours *peakhour.Client
+	Cluster        ClusterClient
+	PeakHours      *peakhour.Client
+	GracefulPeriod time.Duration
+
+	// how to define start peak hour = StartPeakHourMultiplier * GracefulPeriod
+	StartPeakHourMultiplier time.Duration
 }
 
-func NewClient(cluster ClusterClient, peakHour *peakhour.Client) *Client {
+func NewClient(cluster ClusterClient, peakHour *peakhour.Client, gracefulPeriod int) *Client {
 	return &Client{
-		Cluster:   cluster,
-		PeakHours: peakHour,
+		Cluster:                 cluster,
+		PeakHours:               peakHour,
+		GracefulPeriod:          time.Duration(gracefulPeriod) * time.Minute,
+		StartPeakHourMultiplier: 2,
 	}
 }
 
@@ -107,7 +111,7 @@ func (c *Client) ProcessNodesOutsidePeakHour(nodes []corev1.Node) []corev1.Node 
 		log.Println(createdAt.String())
 
 		// node is nearly terminated
-		if createdAt.Add(24*time.Hour).Sub(peakhour.Now()) <= DefaultGracefulDuration {
+		if createdAt.Add(24*time.Hour).Sub(peakhour.Now()) <= c.GracefulPeriod {
 			err := c.Cluster.ProcessNode(node)
 			if err != nil {
 				log.Printf("failed to delete node: %v", err)
@@ -132,11 +136,18 @@ func (c *Client) CalculateNextSchedule(nodes []corev1.Node) time.Duration {
 	}
 
 	start := c.PeakHours.GetNearestStartPeakHour()
+	isStartPeakHour := false
 	if minT.After(start) {
+		isStartPeakHour = true
 		minT = start
 	}
 
-	minT = minT.Add(-1 * DefaultGracefulDuration)
+	if isStartPeakHour {
+		minT = minT.Add(-1 * c.StartPeakHourMultiplier * c.GracefulPeriod)
+	} else {
+		minT = minT.Add(-1 * c.GracefulPeriod)
+	}
+
 	return minT.Sub(peakhour.Now())
 }
 
@@ -145,7 +156,7 @@ func (c *Client) GetPeakHourState() string {
 		return InPeakHour
 	}
 
-	if c.PeakHours.GetNearestStartPeakHour().Sub(peakhour.Now()) <= DefaultGracefulDuration {
+	if c.PeakHours.GetNearestStartPeakHour().Sub(peakhour.Now()) <= c.StartPeakHourMultiplier*c.GracefulPeriod {
 		return StartPeakHour
 	}
 

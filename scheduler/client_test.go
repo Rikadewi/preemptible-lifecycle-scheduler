@@ -78,7 +78,8 @@ func TestClient_GetPeakHourState(t *testing.T) {
 				t.Errorf("failed to create peak hour client %v", err)
 			}
 
-			client := NewClient(nil, ph)
+			client := NewClient(nil, ph, 30)
+			client.StartPeakHourMultiplier = 1
 			if client.GetPeakHourState() != tc.Expected {
 				t.Errorf("expected %v, got %v", tc.Expected, client.GetPeakHourState())
 			}
@@ -164,7 +165,8 @@ func TestClient_CalculateNextSchedule(t *testing.T) {
 				})
 			}
 
-			client := NewClient(&cluster.Client{}, ph)
+			client := NewClient(&cluster.Client{}, ph, 30)
+			client.StartPeakHourMultiplier = 1
 			if client.CalculateNextSchedule(nodes) != tc.Expected {
 				t.Errorf("expected %v, got %v", tc.Expected, client.CalculateNextSchedule(nodes))
 			}
@@ -292,7 +294,7 @@ func TestClient_ProcessNodesStartPeakHour(t *testing.T) {
 			}
 
 			cc := NewMockClusterClient()
-			client := NewClient(cc, ph)
+			client := NewClient(cc, ph, 30)
 			client.ProcessNodesStartPeakHour(nodes)
 
 			if !isTimestampsEqual(cc.ProcessedTs, tc.Expected) {
@@ -405,7 +407,7 @@ func TestClient_ProcessNodesOutsidePeakHour(t *testing.T) {
 			}
 
 			cc := NewMockClusterClient()
-			client := NewClient(cc, ph)
+			client := NewClient(cc, ph, 30)
 
 			unprocessedNodes := client.ProcessNodesOutsidePeakHour(nodes)
 			unprocessedTs := make([]time.Time, 0)
