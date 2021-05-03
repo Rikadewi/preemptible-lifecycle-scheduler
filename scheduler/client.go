@@ -136,18 +136,11 @@ func (c *Client) CalculateNextSchedule(nodes []corev1.Node) time.Duration {
 	}
 
 	start := c.PeakHours.GetNearestStartPeakHour()
-	isStartPeakHour := false
 	if minT.After(start) {
-		isStartPeakHour = true
 		minT = start
 	}
 
-	if isStartPeakHour {
-		minT = minT.Add(-1 * c.StartPeakHourMultiplier * c.GracefulPeriod)
-	} else {
-		minT = minT.Add(-1 * c.GracefulPeriod)
-	}
-
+	minT = minT.Add(-1 * c.StartPeakHourMultiplier * c.GracefulPeriod)
 	return minT.Sub(peakhour.Now())
 }
 
