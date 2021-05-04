@@ -101,6 +101,7 @@ func (c *Client) ProcessNode(node corev1.Node) (err error) {
 			}
 
 			doneProcessing <- true
+			return
 		}
 	}()
 
