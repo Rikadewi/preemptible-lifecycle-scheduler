@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	CheckPodInterval = 10 * time.Second
+	CheckPodInterval       = 10 * time.Second
+	ProcessingNodeInterval = 1 * time.Minute
 )
 
 type Client struct {
@@ -75,17 +76,44 @@ func (c *Client) GetPreemptibleNodes() (*corev1.NodeList, error) {
 func (c *Client) ProcessNode(node corev1.Node) (err error) {
 	log.Printf("processing node %s", node.Name)
 
-	err = c.UnScheduleNode(node)
-	if err != nil {
-		return
+	doneProcessing := make(chan bool)
+	go func() {
+		for {
+			err = c.UnScheduleNode(node)
+			if err != nil {
+				log.Printf("error unschedule node: %s, err :%v", node.Name, err)
+				time.Sleep(ProcessingNodeInterval)
+				continue
+			}
+
+			err = c.DeletePods(node)
+			if err != nil {
+				log.Printf("error delete pods: %s, err :%v", node.Name, err)
+				time.Sleep(ProcessingNodeInterval)
+				continue
+			}
+
+			err = c.DeleteNode(node)
+			if err != nil {
+				log.Printf("error delete node: %s, err :%v", node.Name, err)
+				time.Sleep(ProcessingNodeInterval)
+				continue
+			}
+
+			doneProcessing <- true
+		}
+	}()
+
+	select {
+	case <-doneProcessing:
+		log.Println("done processing node")
+		break
+	case <-time.After(c.DeleteTimeout):
+		log.Println("timeout processing node")
+		return nil
 	}
 
-	err = c.DeletePods(node)
-	if err != nil {
-		return
-	}
-
-	return c.DeleteNode(node)
+	return nil
 }
 
 func (c *Client) UnScheduleNode(node corev1.Node) error {
