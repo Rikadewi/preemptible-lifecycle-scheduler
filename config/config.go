@@ -12,8 +12,11 @@ const (
 
 type Config struct {
 	Environment    string   `yaml:"environment"`
+	IncludedPool   string   `yaml:"included-pool"`
+	ExcludedPool   string   `yaml:"excluded-pool"`
 	GracefulPeriod int      `yaml:"graceful-period"`
 	PeakHourRanges []string `yaml:"peak-hour-ranges"`
+	Debug          bool     `yaml:"debug"`
 }
 
 func NewDefaultConfig() *Config {

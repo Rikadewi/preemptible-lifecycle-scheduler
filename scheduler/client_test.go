@@ -186,8 +186,8 @@ func (c *MockClusterClient) GetPreemptibleNodes() (*corev1.NodeList, error) {
 	return nil, nil
 }
 
-func (c *MockClusterClient) ProcessNode(node corev1.Node) (err error) {
-	c.ProcessedTs = append(c.ProcessedTs, c.GetNodeCreatedTime(node))
+func (c *MockClusterClient) ProcessNode(node *corev1.Node) (err error) {
+	c.ProcessedTs = append(c.ProcessedTs, c.GetNodeCreatedTime(*node))
 	return nil
 }
 

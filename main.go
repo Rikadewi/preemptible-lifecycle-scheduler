@@ -38,7 +38,10 @@ func main() {
 	waitGroup := &sync.WaitGroup{}
 
 	go func(waitGroup *sync.WaitGroup) {
-		time.Sleep(1 * time.Minute)
+		if !cfg.Debug {
+			time.Sleep(1 * time.Minute)
+		}
+
 		schedulerClient.Start()
 	}(waitGroup)
 

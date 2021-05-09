@@ -23,6 +23,9 @@ var (
 type Client struct {
 	KubeClient    *kubernetes.Clientset
 	DeleteTimeout time.Duration
+	IncludedPool  string
+	ExcludedPool  string
+	Debug         bool
 }
 
 func NewClient(cfg *config.Config) (*Client, error) {
@@ -45,6 +48,9 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	return &Client{
 		KubeClient:    clientset,
 		DeleteTimeout: time.Duration(cfg.GracefulPeriod) * time.Minute,
+		IncludedPool:  cfg.IncludedPool,
+		ExcludedPool:  cfg.ExcludedPool,
+		Debug:         cfg.Debug,
 	}, nil
 }
 
@@ -61,8 +67,16 @@ func (c *Client) GetPreemptibleNodes() (*corev1.NodeList, error) {
 	items := make([]corev1.Node, 0)
 	for _, node := range nodes.Items {
 		if val, ok := node.Labels["cloud.google.com/gke-nodepool"]; ok {
-			if val == "prem-test-pool" {
-				continue
+			if c.IncludedPool != "" {
+				if val != c.IncludedPool {
+					continue
+				}
+			}
+
+			if c.ExcludedPool != "" {
+				if val == c.ExcludedPool {
+					continue
+				}
 			}
 		}
 
@@ -73,31 +87,65 @@ func (c *Client) GetPreemptibleNodes() (*corev1.NodeList, error) {
 	return nodes, err
 }
 
-func (c *Client) ProcessNode(node corev1.Node) (err error) {
+func (c *Client) ProcessNode(node *corev1.Node) (err error) {
 	log.Printf("processing node %s", node.Name)
+
+	var character string
 
 	doneProcessing := make(chan bool)
 	go func() {
 		for {
+			if c.Debug {
+				fmt.Println("Press any character to continue unschedule node")
+				_, _ = fmt.Scanln(&character)
+			}
+
+			node, err = c.KubeClient.CoreV1().Nodes().Get(node.Name, metav1.GetOptions{})
+			if err != nil {
+				doneProcessing <- true
+				return
+			}
+
 			err = c.UnScheduleNode(node)
 			if err != nil {
 				log.Printf("error unschedule node: %s, err :%v", node.Name, err)
 				time.Sleep(ProcessingNodeInterval)
 				continue
 			}
+			break
+		}
 
-			err = c.DeletePods(node)
+		for {
+			if c.Debug {
+				fmt.Println("Press any character to continue delete pods")
+				_, _ = fmt.Scanln(&character)
+			}
+
+			err = c.DeletePods(node.Name)
 			if err != nil {
 				log.Printf("error delete pods: %s, err :%v", node.Name, err)
 				time.Sleep(ProcessingNodeInterval)
 				continue
 			}
+			break
+		}
 
-			err = c.DeleteNode(node)
+		for {
+			if c.Debug {
+				fmt.Println("Press any character to continue delete node")
+				_, _ = fmt.Scanln(&character)
+			}
+
+			err = c.DeleteNode(node.Name)
 			if err != nil {
 				log.Printf("error delete node: %s, err :%v", node.Name, err)
 				time.Sleep(ProcessingNodeInterval)
 				continue
+			}
+
+			if c.Debug {
+				fmt.Println("Press any character to continue scheduling")
+				_, _ = fmt.Scanln(&character)
 			}
 
 			doneProcessing <- true
@@ -117,14 +165,16 @@ func (c *Client) ProcessNode(node corev1.Node) (err error) {
 	return nil
 }
 
-func (c *Client) UnScheduleNode(node corev1.Node) error {
+func (c *Client) UnScheduleNode(node *corev1.Node) error {
+	log.Printf("unschedule node %s", node.Name)
 	node.Spec.Unschedulable = true
-	_, err := c.KubeClient.CoreV1().Nodes().Update(&node)
+	_, err := c.KubeClient.CoreV1().Nodes().Update(node)
 	return err
 }
 
-func (c *Client) DeletePods(node corev1.Node) error {
-	pods, err := c.GetPods(node)
+func (c *Client) DeletePods(nodeName string) error {
+	log.Printf("deleting pods in node %s", nodeName)
+	pods, err := c.GetPods(nodeName)
 	if err != nil {
 		return err
 	}
@@ -142,9 +192,9 @@ func (c *Client) DeletePods(node corev1.Node) error {
 	go func() {
 		// check whether all pods have been terminated
 		for {
-			pods, err := c.GetPods(node)
+			pods, err := c.GetPods(nodeName)
 			if err != nil {
-				log.Printf("error get pods from node: %s, err: %v", node.Name, err)
+				log.Printf("error get pods from node: %s, err: %v", nodeName, err)
 				time.Sleep(CheckPodInterval)
 				continue
 			}
@@ -172,10 +222,10 @@ func (c *Client) DeletePods(node corev1.Node) error {
 }
 
 // Get all application pods, filtered out pod from kube-system namespace and DaemonSet.
-func (c *Client) GetPods(node corev1.Node) (pods []corev1.Pod, err error) {
+func (c *Client) GetPods(nodeName string) (pods []corev1.Pod, err error) {
 	pods = make([]corev1.Pod, 0)
 	podList, err := c.KubeClient.CoreV1().Pods("").List(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("spec.nodeName=%s,metadata.namespace!=kube-system", node.Name),
+		FieldSelector: fmt.Sprintf("spec.nodeName=%s,metadata.namespace!=kube-system", nodeName),
 	})
 	if err != nil {
 		return
@@ -201,10 +251,10 @@ func (c *Client) GetPods(node corev1.Node) (pods []corev1.Pod, err error) {
 	return
 }
 
-func (c *Client) DeleteNode(node corev1.Node) error {
+func (c *Client) DeleteNode(nodeName string) error {
 	// TODO: try to check the grace period in delete option
-	log.Printf("deleting node %s", node.Name)
-	return c.KubeClient.CoreV1().Nodes().Delete(node.Name, &metav1.DeleteOptions{})
+	log.Printf("deleting node %s", nodeName)
+	return c.KubeClient.CoreV1().Nodes().Delete(nodeName, &metav1.DeleteOptions{})
 }
 
 func (c *Client) GetNodeCreatedTime(node corev1.Node) time.Time {

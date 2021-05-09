@@ -17,7 +17,7 @@ const (
 
 type ClusterClient interface {
 	GetPreemptibleNodes() (*corev1.NodeList, error)
-	ProcessNode(node corev1.Node) (err error)
+	ProcessNode(node *corev1.Node) (err error)
 	GetNodeCreatedTime(node corev1.Node) time.Time
 }
 
@@ -93,7 +93,7 @@ func (c *Client) ProcessNodesStartPeakHour(nodes []corev1.Node) {
 
 		// node won't survive next peak hour period
 		if endPeakHour.After(createdAt.Add(24*time.Hour)) || endPeakHour.Equal(createdAt.Add(24*time.Hour)) {
-			err := c.Cluster.ProcessNode(node)
+			err := c.Cluster.ProcessNode(&node)
 			if err != nil {
 				log.Printf("failed to process node: %v", err)
 				continue
@@ -110,7 +110,7 @@ func (c *Client) ProcessNodesOutsidePeakHour(nodes []corev1.Node) []corev1.Node 
 
 		// node is nearly terminated
 		if createdAt.Add(24*time.Hour).Sub(peakhour.Now()) <= c.GracefulPeriod {
-			err := c.Cluster.ProcessNode(node)
+			err := c.Cluster.ProcessNode(&node)
 			if err != nil {
 				log.Printf("failed to process node: %v", err)
 			}
