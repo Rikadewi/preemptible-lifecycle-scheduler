@@ -28,6 +28,6 @@ Build Production:
   script:
     - mkdir -p .cache
     - export GOPATH="$CI_PROJECT_DIR/.cache"
-    - /kaniko/executor --build-arg SSH_PRIVATE_KEY="$GIT_PRIVATE_KEY" --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination ${REGISTRY_IMAGE}-${ENV_STAGE}:latest
+    - /kaniko/executor --cache=true --build-arg SSH_PRIVATE_KEY="$GIT_PRIVATE_KEY" --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination ${REGISTRY_IMAGE}-${ENV_STAGE}:latest
   tags:
     - gke

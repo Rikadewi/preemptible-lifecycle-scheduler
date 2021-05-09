@@ -10,8 +10,6 @@ ENV GO111MODULE=on
 RUN mkdir -p /app/src/handler
 WORKDIR /app/src/handler
 
-COPY . .
-
 # Download public key for gitlab.warungpintar.co
 RUN mkdir -p /root/.ssh/ \
     && touch /root/.ssh/config
@@ -21,6 +19,13 @@ RUN echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa \
     && echo "IdentityFile /root/.ssh/id_rsa" >> /root/.ssh/config \
     && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > /root/.ssh/config \
     && git config --global url."git@gitlab.warungpintar.co:".insteadOf "https://gitlab.warungpintar.co/"
+
+# manage dependencies
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /app/src/handler/preemptible-lifecycle-scheduler /app/src/handler/main.go
 #RUN go test $(go list ./... | grep -v /vendor/) -cover

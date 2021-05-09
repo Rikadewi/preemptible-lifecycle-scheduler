@@ -1,0 +1,7 @@
+.git
+Makefile
+README.md
+.gitignore
+.gitlab-ci.yml
+app-deploy.yml
+config.example.yaml
